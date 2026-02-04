@@ -3,6 +3,10 @@ from sqlalchemy import MetaData
 from sqlalchemy_serializer import SerializerMixin
 #from sqlalchemy.orm import validate
 from datetime import datetime
+
+from flask_restful import Resource
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 #from extensions import db
 
 
@@ -22,6 +26,7 @@ class User(db.Model, SerializerMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
 
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
@@ -94,6 +99,78 @@ class Token(db.Model):
     expires_at = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class Accommodation(db.Model, SerializerMixin):
+    __tablename__ = "accommodations"
 
-
+    id = db.Column(db.Integer, primary_key=True)
     
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    location = db.Column(db.String(255), nullable=False)
+    
+    price_per_night = db.Column(db.Float, nullable=False)
+    capacity = db.Column(db.Integer, default=1)
+    
+    host_id = db.Column(
+        db.Integer, 
+        db.ForeignKey("users.id", ondelete="CASCADE"), 
+        nullable=False
+    )
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    bookings = db.relationship(
+        "Booking", 
+        backref="accommodation", 
+        lazy=True, 
+        cascade="all, delete-orphan"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "location": self.location,
+            "price_per_night": self.price_per_night,
+            "host_id": self.host_id
+        }
+
+class Booking(db.Model, SerializerMixin):
+    __tablename__ = "bookings"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer, 
+        db.ForeignKey("users.id", ondelete="CASCADE"), 
+        nullable=False
+    )
+    accommodation_id = db.Column(
+        db.Integer, 
+        db.ForeignKey("accommodations.id", ondelete="CASCADE"), 
+        nullable=False
+    )
+
+    check_in = db.Column(db.DateTime, nullable=False)
+    check_out = db.Column(db.DateTime, nullable=False)
+    
+    status = db.Column(db.String(20), default="pending", nullable=False)
+    
+
+    total_price = db.Column(db.Numeric(12, 2), nullable=False)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "accommodation_title": self.accommodation.title, 
+            "location": self.accommodation.location,
+            "status": self.status,
+            "check_in": self.check_in.isoformat(),
+            "check_out": self.check_out.isoformat(),
+            "total_price": float(self.total_price)
+        }
+
+
