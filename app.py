@@ -55,51 +55,5 @@ api.add_resource(VerifyEmail, "/auth/verify-email")
 api.add_resource(ForgotPassword, "/auth/forgot-password", endpoint="forgotpassword")
 api.add_resource(ResetPassword, "/auth/reset-password", endpoint="resetpassword")
 
-@app.route('/test-email')
-def test_email():
-    """Test endpoint to verify email configuration"""
-    from flask_mail import Message
-    try:
-        msg = Message(
-            subject="Test Email from Student Hostel App",
-            recipients=["nelsonmunyua8@gmail.com"],
-            html="<h1>Email Test Successful!</h1><p>Your Brevo SMTP is working correctly.</p>"
-        )
-        mail.send(msg)
-        return {
-            "success": True,
-            "message": "Test email sent successfully!",
-            "config": {
-                "mail_server": app.config.get("MAIL_SERVER"),
-                "mail_username": app.config.get("MAIL_USERNAME"),
-                "mail_sender": app.config.get("MAIL_DEFAULT_SENDER")
-            }
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "config": {
-                "mail_server": app.config.get("MAIL_SERVER"),
-                "mail_username": app.config.get("MAIL_USERNAME"),
-                "mail_port": app.config.get("MAIL_PORT")
-            }
-        }, 500
 
-if __name__ == "__main__":
-    # Debug info
-    print("=" * 50)
-    print("EMAIL CONFIGURATION CHECK:")
-    print(f"MAIL_SERVER: {app.config.get('MAIL_SERVER')}")
-    print(f"MAIL_PORT: {app.config.get('MAIL_PORT')}")
-    print(f"MAIL_USERNAME: {app.config.get('MAIL_USERNAME')}")
-    print(f"MAIL_DEFAULT_SENDER: {app.config.get('MAIL_DEFAULT_SENDER')}")
-    print(f"MAIL_USE_TLS: {app.config.get('MAIL_USE_TLS')}")
-    print(f"MAIL_USE_SSL: {app.config.get('MAIL_USE_SSL')}")
-    print("=" * 50)
-    
-    # Create tables
-    with app.app_context():
-        db.create_all()
-    
-    app.run(port=5000, debug=True)
+
