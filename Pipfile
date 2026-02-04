@@ -11,6 +11,9 @@ flask-sqlalchemy = "*"
 sqlalchemy-serializer = "*"
 flask-bcrypt = "*"
 flask-jwt-extended = "*"
+flask-mail = "*"
+python-dotenv = "*"
+itsdangerous = "*"
 
 [dev-packages]
 
