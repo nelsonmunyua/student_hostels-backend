@@ -3,6 +3,10 @@ from sqlalchemy import MetaData
 from sqlalchemy_serializer import SerializerMixin
 #from sqlalchemy.orm import validate
 from datetime import datetime
+
+from flask_restful import Resource
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 #from extensions import db
 
 
@@ -22,6 +26,7 @@ class User(db.Model, SerializerMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
 
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
@@ -168,4 +173,4 @@ class Booking(db.Model, SerializerMixin):
             "total_price": float(self.total_price)
         }
 
-    
+
