@@ -37,7 +37,7 @@ jwt = JWTManager(app)
 mail = Mail(app)
 
 # Import resources
-from resouces.auth import Signup, Login, RefreshToken, Logout, VerifyEmail, Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
+from resources.auth import Signup, Login, RefreshToken, Logout, VerifyEmail, Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
 
 @app.route('/')
 def index():
