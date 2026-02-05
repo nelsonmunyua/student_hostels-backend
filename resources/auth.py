@@ -15,6 +15,7 @@ bcrypt = Bcrypt()
 
 class Signup(Resource):
     parser = reqparse.RequestParser()
+    parser.add_argument("username", required=True, help="Username required")
     parser.add_argument("first_name", required=True, help="First name required")
     parser.add_argument("last_name", required=True, help="Last name required")
     parser.add_argument("email", required=True, help="Email required")
@@ -27,6 +28,7 @@ class Signup(Resource):
 
         try:
             user = User(
+                username=data["username"],
                 first_name=data["first_name"],
                 last_name=data["last_name"],
                 email=data["email"],
@@ -51,9 +53,9 @@ class Signup(Resource):
             db.session.add(token)
             db.session.commit()
 
-            send_verification_email(user, token_value)
+            # send_verification_email(user, token_value)
 
-            access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
 
             return {
                 "user": user.to_dict(),
@@ -83,8 +85,8 @@ class Login(Resource):
         ):
             return {"message": "Invalid email or password"}, 401
 
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
 
         user.last_login_at = datetime.utcnow()
         user.login_count += 1
