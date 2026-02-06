@@ -1,8 +1,8 @@
-"""add tokens
+"""add enum to the role table
 
-Revision ID: 6c20d644849a
+Revision ID: 99383d49dd49
 Revises: 
-Create Date: 2026-02-03 11:07:59.187801
+Create Date: 2026-02-05 11:13:58.608639
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6c20d644849a'
+revision = '99383d49dd49'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -25,7 +25,7 @@ def upgrade():
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
     sa.Column('phone', sa.String(length=20), nullable=True),
-    sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('role', sa.Enum('student', 'host', 'admin'), nullable=False),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
     sa.Column('last_login_at', sa.DateTime(), nullable=True),
     sa.Column('login_count', sa.Integer(), nullable=True),

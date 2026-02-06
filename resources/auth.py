@@ -53,11 +53,11 @@ class Signup(Resource):
 
             send_verification_email(user, token_value)
 
-            access_token = create_access_token(identity=user.id)
+            #access_token = create_access_token(identity=user.id)
 
             return {
                 "user": user.to_dict(),
-                "token": access_token,
+                #"token": access_token,
                 "message": "Account created successfully"
             }, 201
 
@@ -83,7 +83,7 @@ class Login(Resource):
         ):
             return {"message": "Invalid email or password"}, 401
 
-        access_token = create_access_token(identity=user.id)
+        access_token = create_access_token(identity=user.id, additional_claims={"role": user.role})
         refresh_token = create_refresh_token(identity=user.id)
 
         user.last_login_at = datetime.utcnow()
