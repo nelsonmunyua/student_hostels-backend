@@ -53,11 +53,11 @@ class Signup(Resource):
 
             send_verification_email(user, token_value)
 
-            #access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=user.id)
 
             return {
                 "user": user.to_dict(),
-                #"token": access_token,
+                "token": access_token,
                 "message": "Account created successfully"
             }, 201
 
