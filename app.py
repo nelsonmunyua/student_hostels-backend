@@ -8,6 +8,7 @@ from flask_mail import Mail
 from config import Config
 from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
+from seed import seed_database
 import os
 # Load environment variables
 load_dotenv(override=True)
@@ -50,11 +51,18 @@ from resources.auth import (
     Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
 )
 
+from resources.admin.admin import ( AdminDashboardResource, AdminUsersResource, AdminUserStatusResource, AdminAnalyticsResource,
+AdminHostelsResource, AdminHostVerificationAction, AdminBookingsResource, AdminSettingsResource, AdminHostVerificationResource,
+AdminHostelStatusResource, AdminPaymentResource, AdminPaymentStatusResourse, AdminReviewDeleteResource, AdminReviewResource 
+)
+
+
+
 
 @app.route('/')
 def index():
     return {"Message": "Student-hostel server running"}
-
+ # Authentication Routes
 api.add_resource(Signup, '/auth/signup')
 api.add_resource(Login, '/auth/login')
 api.add_resource(Logout, '/auth/logout')
@@ -66,8 +74,35 @@ api.add_resource(VerifyEmail, "/auth/verify-email")
 api.add_resource(ForgotPassword, "/auth/forgot-password", endpoint="forgotpassword")
 api.add_resource(ResetPassword, "/auth/reset-password", endpoint="resetpassword")
 
+ # Admin Routes
+api.add_resource(AdminDashboardResource, "/admin/dashboard") 
+api.add_resource(AdminUsersResource, "/admin/users")
+api.add_resource(AdminUserStatusResource, "/admin/users/<int:user_id>")
+api.add_resource(AdminHostelsResource, "/admin/hostels")
+api.add_resource(AdminHostelStatusResource, "/admin/hostels/<int:hostel_id>")
+
+api.add_resource(AdminBookingsResource, "/admin/bookings")
+
+api.add_resource(AdminPaymentsResource, "/admin/payments")
+api.add_resource(AdminPaymentStatusResource, "/admin/payments/<int:payment_id>")
+
+api.add_resource(AdminReviewsResource, "/admin/reviews")
+api.add_resource(AdminReviewDeleteResource, "/admin/reviews/<int:review_id>")
+
+api.add_resource(AdminHostVerificationResource, "/admin/verifications")
+api.add_resource(AdminHostVerificationAction, "/admin/verifications/<int:verification_id>")
+
+api.add_resource(AdminAnalyticsResource, "/admin/analytics")
+api.add_resource(AdminSettingsResource, "/admin/settings")
 
 
+@app.cli.command("seed")
+def seed_command():
+    """Seed the database with sample data"""
+    with app.app_context():
+        seed_database()
+    print("Database seeded!")
 
-
+if __name__ == "__main__":
+    app.run(debug=True)
 
