@@ -1,8 +1,8 @@
-"""updated models
+"""initial postgress commit
 
-Revision ID: 6a552160108b
+Revision ID: 1b7d00e6ee49
 Revises: 
-Create Date: 2026-02-06 10:12:19.499268
+Create Date: 2026-02-07 15:26:16.136512
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6a552160108b'
+revision = '1b7d00e6ee49'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
     sa.Column('phone', sa.String(length=20), nullable=True),
-    sa.Column('role', sa.Enum('student', 'host', 'admin'), nullable=False),
+    sa.Column('role', sa.Enum('student', 'host', 'admin', name='role_type'), nullable=False),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
     sa.Column('last_login_at', sa.DateTime(), nullable=True),
     sa.Column('login_count', sa.Integer(), nullable=True),
