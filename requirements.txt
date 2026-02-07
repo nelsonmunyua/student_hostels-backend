@@ -1,14 +1,30 @@
-flask = "*"
-flask-restful = "*"
-flask-migrate = "*"
-sqlalchemy-serializer = "*"
-flask-bcrypt = "*"
-flask-jwt-extended = "*"
-flask-mail = "*"
-python-dotenv = "*"
-itsdangerous = "*"
-flask-cors = "*"
-flask-sqlalchemy = "*"
-psycopg2-binary = "*"
-gunicorn = "*"
-Werkzeug = "*"
+# requirements.txt for Flask app on Render with Python 3.8
+
+# Flask core - compatible with Python 3.8
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Database
+Flask-SQLAlchemy==3.0.5
+SQLAlchemy==2.0.19
+psycopg2-binary==2.9.7
+Flask-Migrate==4.0.4
+sqlalchemy-serializer==1.5.0
+
+# Authentication & Security
+Flask-Bcrypt==1.0.1
+Flask-JWT-Extended==4.5.3
+itsdangerous==2.1.2
+
+# API & CORS
+Flask-RESTful==0.3.10
+Flask-CORS==4.0.0
+
+# Email
+Flask-Mail==0.9.1
+
+# Environment
+python-dotenv==1.0.0
+
+# Production server
+gunicorn==21.2.0
