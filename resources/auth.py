@@ -188,14 +188,25 @@ class VerifyEmail(Resource):
     parser.add_argument("token", required=True, location="json")  # Specify location
     
     def get(self):
-        """Handle GET requests from email verification links"""
+        """Handle GET requests from email verification links - redirect to frontend"""
         # Get token from query parameter
         token_value = request.args.get('token')
         
         if not token_value:
-            return {"message": "Token is required"}, 400
+            from flask import redirect
+            return redirect("http://localhost:5173/login?error=verification_failed&message=Token is required")
             
-        return self._verify_token(token_value)
+        result = self._verify_token(token_value)
+        
+        # If verification was successful, redirect to login with success message
+        if result[1] == 200:
+            from flask import redirect
+            return redirect("http://localhost:5173/login?verified=true")
+        
+        # If verification failed, redirect to login with error
+        error_message = result[0].get("message", "Verification failed")
+        from flask import redirect
+        return redirect(f"http://localhost:5173/login?error=verification_failed&message={error_message}")
     
     def post(self):
         """Handle POST requests from API calls"""
@@ -264,11 +275,13 @@ class ForgotPassword(Resource):
     
 class ResetPassword(Resource):
     def get(self):
-        """Validate reset token (from email link)"""
+        """Handle GET requests - redirect to frontend with token"""
         token_value = request.args.get("token")
         
         if not token_value:
-            return {"message": "Token is required"}, 400
+            # Redirect to frontend with error
+            from flask import redirect
+            return redirect("http://localhost:5173/reset-password?error=token_required")
         
         # Check token validity
         token = Token.query.filter_by(
@@ -277,12 +290,21 @@ class ResetPassword(Resource):
         ).first()
         
         if not token:
-            return {"message": "Invalid token"}, 400
+            # Redirect to frontend with error
+            from flask import redirect
+            return redirect("http://localhost:5173/reset-password?error=invalid_token")
         
         if token.expires_at < datetime.utcnow():
-            return {"message": "Token has expired"}, 400
+            # Delete expired token
+            db.session.delete(token)
+            db.session.commit()
+            # Redirect to frontend with error
+            from flask import redirect
+            return redirect("http://localhost:5173/reset-password?error=expired_token")
         
-        return {"message": "Token is valid", "user_id": token.user_id}, 200
+        # Token is valid - redirect to frontend with token
+        from flask import redirect
+        return redirect(f"http://localhost:5173/reset-password?token={token_value}")
     
     def post(self):
         """Actually reset password"""

@@ -34,7 +34,7 @@ class User(db.Model, SerializerMixin):
 
     phone = db.Column(db.String(20), unique=True, index=True)
 
-    role = db.Column(db.Enum("student", "host", "admin"),
+    role = db.Column(db.Enum("student", "host", "admin", name="role_type"),
         nullable=False,
         default="student"
     )  # student | host | admin

@@ -15,6 +15,7 @@ python-dotenv = "*"
 itsdangerous = "*"
 flask-cors = "*"
 flask-sqlalchemy = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 

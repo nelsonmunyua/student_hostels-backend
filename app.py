@@ -28,7 +28,7 @@ CORS(app)
 # Load configuration
 app.config.from_object(Config)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///student_hostel.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_ECHO"] = True
 app.config["BUNDLE_ERRORS"] = True
 
@@ -83,10 +83,10 @@ api.add_resource(AdminHostelStatusResource, "/admin/hostels/<int:hostel_id>")
 
 api.add_resource(AdminBookingsResource, "/admin/bookings")
 
-api.add_resource(AdminPaymentsResource, "/admin/payments")
-api.add_resource(AdminPaymentStatusResource, "/admin/payments/<int:payment_id>")
+api.add_resource(AdminPaymentResource, "/admin/payments")
+api.add_resource(AdminPaymentStatusResourse, "/admin/payments/<int:payment_id>")
 
-api.add_resource(AdminReviewsResource, "/admin/reviews")
+api.add_resource(AdminReviewResource, "/admin/reviews")
 api.add_resource(AdminReviewDeleteResource, "/admin/reviews/<int:review_id>")
 
 api.add_resource(AdminHostVerificationResource, "/admin/verifications")
