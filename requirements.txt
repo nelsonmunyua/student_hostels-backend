@@ -1,15 +1,17 @@
 # requirements.txt for Flask app on Render with Python 3.8
 
-# Flask core - compatible with Python 3.8
+# Flask core
 Flask==2.3.3
 Werkzeug==2.3.7
 
-# Database
-Flask-SQLAlchemy==3.0.5
-SQLAlchemy==2.0.19
+# Database - updated versions for compatibility
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.23  # Compatible with both Flask-SQLAlchemy 3.1.1 and sqlalchemy-serializer
 psycopg2-binary==2.9.7
-Flask-Migrate==4.0.4
-sqlalchemy-serializer==1.5.0
+Flask-Migrate==4.0.5
+
+# Serializer - use a version that's more flexible with SQLAlchemy
+sqlalchemy-serializer==1.5.0  # This might still conflict, see alternative below
 
 # Authentication & Security
 Flask-Bcrypt==1.0.1
