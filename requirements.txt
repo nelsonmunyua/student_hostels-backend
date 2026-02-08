@@ -13,4 +13,5 @@ Flask-RESTful==0.3.10
 Flask-CORS==4.0.0
 Flask-Mail==0.9.1
 python-dotenv==1.0.0
-gunicorn==20.1.0
+setuptools==70.0.0
+gunicorn==21.0.0
