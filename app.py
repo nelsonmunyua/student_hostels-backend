@@ -18,11 +18,16 @@ app = Flask(__name__)
 
 # Enable CORS for all routes with proper configuration
 #CORS(app)
-CORS(app, 
-    resources={r"/*": {"origins": ["http://localhost:5173", "https://student-hostels-frontend-3d23-mdfz4z0ec.vercel.app", "https://*.vercel.app"]}},
+allowed_origins = [
+    "http://localhost:5173",  # local dev
+    "https://student-hostels-frontend-3d23.vercel.app",  # your deployed frontend
+]
+
+CORS(
+    app,
+    resources={r"/*": {"origins": allowed_origins}},
     supports_credentials=True,
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"]
 )
 
 # Load configuration
