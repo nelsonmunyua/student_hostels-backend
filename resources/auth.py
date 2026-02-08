@@ -1,4 +1,4 @@
-from flask import request
+from flask import request, current_app
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity, get_jwt
 from flask_bcrypt import Bcrypt
@@ -51,7 +51,12 @@ class Signup(Resource):
             db.session.add(token)
             db.session.commit()
 
-            send_verification_email(user, token_value)
+            # Try to send verification email, but don't fail if it errors
+            try:
+                send_verification_email(user, token_value)
+            except Exception as email_error:
+                # Log the error but don't fail signup
+                print(f"Email sending failed: {email_error}")
 
             access_token = create_access_token(identity=user.id)
 
@@ -64,6 +69,9 @@ class Signup(Resource):
         except IntegrityError:
             db.session.rollback()
             return {"message": "Email already exists"}, 400
+        except Exception as e:
+            db.session.rollback()
+            return {"message": f"Signup failed: {str(e)}"}, 500
         
 
 # login Api
