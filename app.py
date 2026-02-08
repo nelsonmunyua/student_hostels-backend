@@ -19,7 +19,7 @@ app = Flask(__name__)
 # Enable CORS for all routes with proper configuration
 #CORS(app)
 CORS(app, 
-    resources={r"/*": {"origins": ["http://localhost:5173", "https://student-hostels-frontend-3d23.vercel.app", "https://*.vercel.app"]}},
+    resources={r"/*": {"origins": ["http://localhost:5173", "https://student-hostels-frontend-3d23-mdfz4z0ec.vercel.app", "https://*.vercel.app"]}},
     supports_credentials=True,
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"]
@@ -56,7 +56,7 @@ AdminHostelsResource, AdminHostVerificationAction, AdminBookingsResource, AdminS
 AdminHostelStatusResource, AdminPaymentResource, AdminPaymentStatusResourse, AdminReviewDeleteResource, AdminReviewResource 
 )
 
-
+#postgresql://root:VcUrgCvgV0Qx4Y73mWH1aDbOhFUctzsD@dpg-d63mr9shg0os73ckn7o0-a.virginia-postgres.render.com/student_hostel_xopf
 
 
 @app.route('/')

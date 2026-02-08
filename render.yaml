@@ -6,7 +6,7 @@ services:
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
     envVars:
       - key: FRONTEND_URL
-        value: https://your-production-frontend.vercel.app
+        value: https://student-hostels-frontend-3d23.vercel.app
       - key: PYTHON_VERSION
         value: 3.8.13
       - key: DATABASE_URL
@@ -21,7 +21,7 @@ services:
         value: smtp-relay.brevo.com
       - key: MAIL_PORT
         value: "587"
-      - key: MAIL_USE_TLS
+      - key: MAIL_USE_SSL
         value: "True"
       - key: MAIL_USERNAME
         fromSecret: mail-username
