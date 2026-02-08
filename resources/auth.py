@@ -194,19 +194,22 @@ class VerifyEmail(Resource):
         
         if not token_value:
             from flask import redirect
-            return redirect("http://localhost:5173/login?error=verification_failed&message=Token is required")
+            frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+            return redirect(f"{frontend_url}/login?error=verification_failed&message=Token is required")
             
         result = self._verify_token(token_value)
         
         # If verification was successful, redirect to login with success message
         if result[1] == 200:
             from flask import redirect
-            return redirect("http://localhost:5173/login?verified=true")
+            frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+            return redirect(f"{frontend_url}/login?verified=true")
         
         # If verification failed, redirect to login with error
         error_message = result[0].get("message", "Verification failed")
         from flask import redirect
-        return redirect(f"http://localhost:5173/login?error=verification_failed&message={error_message}")
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        return redirect(f"{frontend_url}/login?error=verification_failed&message={error_message}")
     
     def post(self):
         """Handle POST requests from API calls"""
@@ -277,11 +280,12 @@ class ResetPassword(Resource):
     def get(self):
         """Handle GET requests - redirect to frontend with token"""
         token_value = request.args.get("token")
+        frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
         
         if not token_value:
             # Redirect to frontend with error
             from flask import redirect
-            return redirect("http://localhost:5173/reset-password?error=token_required")
+            return redirect(f"{frontend_url}/reset-password?error=token_required")
         
         # Check token validity
         token = Token.query.filter_by(
@@ -292,7 +296,7 @@ class ResetPassword(Resource):
         if not token:
             # Redirect to frontend with error
             from flask import redirect
-            return redirect("http://localhost:5173/reset-password?error=invalid_token")
+            return redirect(f"{frontend_url}/reset-password?error=invalid_token")
         
         if token.expires_at < datetime.utcnow():
             # Delete expired token
@@ -300,11 +304,11 @@ class ResetPassword(Resource):
             db.session.commit()
             # Redirect to frontend with error
             from flask import redirect
-            return redirect("http://localhost:5173/reset-password?error=expired_token")
+            return redirect(f"{frontend_url}/reset-password?error=expired_token")
         
         # Token is valid - redirect to frontend with token
         from flask import redirect
-        return redirect(f"http://localhost:5173/reset-password?token={token_value}")
+        return redirect(f"{frontend_url}/reset-password?token={token_value}")
     
     def post(self):
         """Actually reset password"""

@@ -5,6 +5,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
     envVars:
+      - key: FRONTEND_URL
+        value: https://your-production-frontend.vercel.app
       - key: PYTHON_VERSION
         value: 3.8.13
       - key: DATABASE_URL
