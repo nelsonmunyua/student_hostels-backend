@@ -17,17 +17,19 @@ load_dotenv(override=True)
 app = Flask(__name__)
 
 # Enable CORS for all routes with proper configuration
-#CORS(app)
+# Allow all origins in development
 allowed_origins = [
     "http://localhost:5173",  # local dev
     "https://student-hostels-frontend-3d23.vercel.app",  # your deployed frontend
+    "*"  # Allow all origins in development
 ]
 
 CORS(
     app,
     resources={r"/*": {"origins": allowed_origins}},
     supports_credentials=True,
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"]
 )
 
 # Load configuration
@@ -63,9 +65,23 @@ from resources.auth import (
     Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
 )
 
-from resources.admin.admin import ( AdminDashboardResource, AdminUsersResource, AdminUserStatusResource, AdminAnalyticsResource,
-AdminHostelsResource, AdminHostVerificationAction, AdminBookingsResource, AdminSettingsResource, AdminHostVerificationResource,
-AdminHostelStatusResource, AdminPaymentResource, AdminPaymentStatusResourse, AdminReviewDeleteResource, AdminReviewResource 
+from resources.admin.admin import ( 
+    AdminDashboardResource, 
+    AdminUsersResource, 
+    AdminUserStatusResource, 
+    AdminAnalyticsResource,
+    AdminHostelsResource, 
+    AdminHostVerificationAction, 
+    AdminBookingsResource, 
+    AdminBookingDetailResource,
+    AdminSettingsResource, 
+    AdminHostVerificationResource,
+    AdminHostelStatusResource, 
+    AdminPaymentResource, 
+    AdminPaymentStatusResourse, 
+    AdminReviewDeleteResource, 
+    AdminReviewResource,
+    AdminReviewStatusResource
 )
 
 #postgresql://root:VcUrgCvgV0Qx4Y73mWH1aDbOhFUctzsD@dpg-d63mr9shg0os73ckn7o0-a.virginia-postgres.render.com/student_hostel_xopf
@@ -94,11 +110,13 @@ api.add_resource(AdminHostelsResource, "/admin/hostels")
 api.add_resource(AdminHostelStatusResource, "/admin/hostels/<int:hostel_id>")
 
 api.add_resource(AdminBookingsResource, "/admin/bookings")
+api.add_resource(AdminBookingDetailResource, "/admin/bookings/<int:booking_id>")
 
 api.add_resource(AdminPaymentResource, "/admin/payments")
 api.add_resource(AdminPaymentStatusResourse, "/admin/payments/<int:payment_id>")
 
 api.add_resource(AdminReviewResource, "/admin/reviews")
+api.add_resource(AdminReviewStatusResource, "/admin/reviews/<int:review_id>/status")
 api.add_resource(AdminReviewDeleteResource, "/admin/reviews/<int:review_id>")
 
 api.add_resource(AdminHostVerificationResource, "/admin/verifications")

@@ -114,6 +114,8 @@ class Hostel(db.Model, SerializerMixin):
 
     amenities = db.Column(db.JSON)  # wifi, water, security, parking
     rules = db.Column(db.Text)
+    
+    images = db.Column(db.JSON)  # Array of image URLs
 
     is_verified = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -214,6 +216,11 @@ class Review(db.Model, SerializerMixin):
 
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
+
+    status = db.Column(
+        db.Enum("pending", "approved", "rejected", name="review_status"),
+        default="pending"
+    )
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
