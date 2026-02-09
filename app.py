@@ -33,7 +33,14 @@ CORS(
 # Load configuration
 app.config.from_object(Config)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+#app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("DATABASE_URL is not set")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+
+
 app.config["SQLALCHEMY_ECHO"] = True
 app.config["BUNDLE_ERRORS"] = True
 
