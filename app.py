@@ -84,6 +84,26 @@ from resources.admin.admin import (
     AdminReviewStatusResource
 )
 
+from resources.student import (
+    StudentAccommodations,
+    StudentAccommodationDetail,
+    StudentWishlist,
+    StudentWishlistItem,
+    StudentWishlistCheck,
+    StudentReviews,
+    StudentReviewDetail,
+    StudentPendingReviews,
+    StudentPayments,
+    StudentPaymentStats,
+    StudentNotifications,
+    StudentNotificationDetail,
+    StudentSupport,
+    StudentSupportTickets,
+    StudentDashboardStats,
+    StudentBookings,
+    StudentBookingDetail
+)
+
 #postgresql://root:VcUrgCvgV0Qx4Y73mWH1aDbOhFUctzsD@dpg-d63mr9shg0os73ckn7o0-a.virginia-postgres.render.com/student_hostel_xopf
 
 
@@ -124,6 +144,25 @@ api.add_resource(AdminHostVerificationAction, "/admin/verifications/<int:verific
 
 api.add_resource(AdminAnalyticsResource, "/admin/analytics")
 api.add_resource(AdminSettingsResource, "/admin/settings")
+
+# Student Routes
+api.add_resource(StudentAccommodations, "/student/accommodations")
+api.add_resource(StudentAccommodationDetail, "/student/accommodations/<int:hostel_id>")
+api.add_resource(StudentWishlist, "/student/wishlist")
+api.add_resource(StudentWishlistItem, "/student/wishlist/<int:hostel_id>")
+api.add_resource(StudentWishlistCheck, "/student/wishlist/check/<int:hostel_id>")
+api.add_resource(StudentReviews, "/student/reviews")
+api.add_resource(StudentReviewDetail, "/student/reviews/<int:review_id>")
+api.add_resource(StudentPendingReviews, "/student/reviews/pending")
+api.add_resource(StudentPayments, "/student/payments")
+api.add_resource(StudentPaymentStats, "/student/payments/stats")
+api.add_resource(StudentNotifications, "/student/notifications")
+api.add_resource(StudentNotificationDetail, "/student/notifications/<int:notification_id>")
+api.add_resource(StudentSupport, "/student/support")
+api.add_resource(StudentSupportTickets, "/student/support/tickets")
+api.add_resource(StudentDashboardStats, "/student/dashboard-stats")
+api.add_resource(StudentBookings, "/student/bookings")
+api.add_resource(StudentBookingDetail, "/student/bookings/<int:booking_id>")
 
 
 @app.cli.command("seed")
