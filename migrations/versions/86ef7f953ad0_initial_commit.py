@@ -1,8 +1,8 @@
-"""initial postgress commit
+"""initial commit
 
-Revision ID: 1b7d00e6ee49
+Revision ID: 86ef7f953ad0
 Revises: 
-Create Date: 2026-02-07 15:26:16.136512
+Create Date: 2026-02-09 07:09:17.899950
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1b7d00e6ee49'
+revision = '86ef7f953ad0'
 down_revision = None
 branch_labels = None
 depends_on = None
