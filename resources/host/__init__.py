@@ -1,2 +1,0 @@
-# Host resources package
-
