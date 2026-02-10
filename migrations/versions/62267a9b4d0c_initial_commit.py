@@ -1,8 +1,8 @@
 """initial commit
 
-Revision ID: 86ef7f953ad0
+Revision ID: 62267a9b4d0c
 Revises: 
-Create Date: 2026-02-09 07:09:17.899950
+Create Date: 2026-02-10 11:30:24.323813
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '86ef7f953ad0'
+revision = '62267a9b4d0c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -68,6 +68,7 @@ def upgrade():
     sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('amenities', sa.JSON(), nullable=True),
     sa.Column('rules', sa.Text(), nullable=True),
+    sa.Column('images', sa.JSON(), nullable=True),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -184,6 +185,7 @@ def upgrade():
     sa.Column('hostel_id', sa.Integer(), nullable=True),
     sa.Column('rating', sa.Integer(), nullable=False),
     sa.Column('comment', sa.Text(), nullable=True),
+    sa.Column('status', sa.Enum('pending', 'approved', 'rejected', name='review_status'), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], name=op.f('fk_reviews_booking_id_bookings')),
     sa.ForeignKeyConstraint(['hostel_id'], ['hostels.id'], name=op.f('fk_reviews_hostel_id_hostels')),
