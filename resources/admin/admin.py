@@ -2,7 +2,7 @@ from flask import request
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from functools import wraps
-from models import db, User, Hostel, Booking, HostVerification, Payment, Review, Setting
+from models import db, User, Hostel, Room, Booking, HostVerification, Payment, Review, Setting
 from flask import abort
 from datetime import datetime
 #from flask import User
@@ -43,6 +43,68 @@ class AdminDashboardResource(Resource):
         bookings_confirmed = Booking.query.filter_by(status="confirmed").count()
         bookings_completed = Booking.query.filter_by(status="completed").count()
         
+        # Get recent activity (bookings, registrations, reviews)
+        from datetime import timedelta
+        
+        recent_activities = []
+        
+        # Recent bookings (last 10)
+        recent_bookings = Booking.query.order_by(Booking.created_at.desc()).limit(1).all()
+        for booking in recent_bookings:
+            # Fetch related user and room separately
+            user = User.query.get(booking.student_id)
+            user_name = f"{user.first_name} {user.last_name}" if user else "Unknown User"
+            room = Room.query.get(booking.room_id)
+            hostel = Hostel.query.get(room.hostel_id) if room else None
+            hostel_name = hostel.name if hostel else "-"
+            # Store both datetime for sorting and isoformat for JSON
+            recent_activities.append({
+                "id": f"booking_{booking.id}",
+                "user": user_name,
+                "action": f"Booked a room at {hostel_name}",
+                "hostel": hostel_name,
+                "time": booking.created_at.isoformat() if booking.created_at else None,
+                "time_sort": booking.created_at,
+                "type": "booking"
+            })
+        
+        # Recent user registrations (last 5)
+        recent_users = User.query.order_by(User.created_at.desc()).limit(1).all()
+        for user in recent_users:
+            recent_activities.append({
+                "id": f"user_{user.id}",
+                "user": f"{user.first_name} {user.last_name}",
+                "action": "Registered as student",
+                "hostel": "-",
+                "time": user.created_at.isoformat() if user.created_at else None,
+                "time_sort": user.created_at,
+                "type": "registration"
+            })
+        
+        # Recent reviews (last 5)
+        recent_reviews = Review.query.order_by(Review.created_at.desc()).limit(1).all()
+        for review in recent_reviews:
+            # Fetch related user and hostel separately
+            user = User.query.get(review.user_id)
+            hostel = Hostel.query.get(review.hostel_id) if review.hostel_id else None
+            if user:
+                hostel_name = hostel.name if hostel else "Unknown Hostel"
+                recent_activities.append({
+                    "id": f"review_{review.id}",
+                    "user": f"{user.first_name} {user.last_name}",
+                    "action": f"Left a review ({review.rating} stars)",
+                    "hostel": hostel_name,
+                    "time": review.created_at.isoformat() if review.created_at else None,
+                    "time_sort": review.created_at,
+                    "type": "review"
+                })
+        
+        # Sort all activities by time (most recent first)
+        recent_activities.sort(key=lambda x: x["time_sort"], reverse=True)
+        
+        # Take top 10 most recent activities and remove sort key
+        recent_activities = [{k: v for k, v in act.items() if k != "time_sort"} for act in recent_activities[:3]]
+        
         return {
             "users": total_users,
             "hostels": total_hostels,
@@ -55,7 +117,8 @@ class AdminDashboardResource(Resource):
                 "bookings_pending": bookings_pending,
                 "bookings_confirmed": bookings_confirmed,
                 "bookings_completed": bookings_completed
-            }
+            },
+            "recent_activity": recent_activities
         }
     
 class AdminUsersResource(Resource):
@@ -63,16 +126,18 @@ class AdminUsersResource(Resource):
     @admin_required
     def get(self):
         users = User.query.order_by(User.created_at.desc()).all()
-        # Return plain dictionaries to avoid serialization issues
+        # Return plain dictionaries with frontend-expected field names
         return [
             {
                 "id": u.id,
-                "first_name": u.first_name,
-                "last_name": u.last_name,
+                "firstName": u.first_name,
+                "lastName": u.last_name,
                 "email": u.email,
                 "phone": u.phone,
                 "role": str(u.role) if u.role else None,  # Enum to string
                 "is_verified": bool(u.is_verified),
+                "status": "active" if u.is_verified else "pending",  # Map is_verified to status
+                "joinedDate": u.created_at.isoformat() if u.created_at else None,
                 "created_at": u.created_at.isoformat() if u.created_at else None
             }
             for u in users
@@ -126,12 +191,14 @@ class AdminUsersResource(Resource):
                 "message": "User created successfully",
                 "user": {
                     "id": user.id,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
+                    "firstName": user.first_name,
+                    "lastName": user.last_name,
                     "email": user.email,
                     "phone": user.phone,
                     "role": str(user.role) if user.role else None,
                     "is_verified": bool(user.is_verified),
+                    "status": "active" if user.is_verified else "pending",
+                    "joinedDate": user.created_at.isoformat() if user.created_at else None,
                     "created_at": user.created_at.isoformat() if user.created_at else None
                 }
             }, 201
@@ -575,24 +642,31 @@ class AdminAnalyticsResource(Resource):
         active_hostels = Hostel.query.filter_by(is_active=True).count()
         verified_hostels = Hostel.query.filter_by(is_verified=True).count()
         
-        # Monthly trend (simplified - last 6 months)
-        import dateutil.relativedelta as relativedelta
-        from dateutil import parser
-        six_months_ago = datetime.utcnow() - relativedelta.relativedelta(months=6)
+        # Monthly trend (last 6 months) - SQLite compatible approach
+        from datetime import timedelta
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
         
-        monthly_signups_query = db.session.query(
-            db.func.date_trunc('month', User.created_at).label('month'),
-            db.func.count(User.id).label('count')
-        ).filter(User.created_at >= six_months_ago).group_by('month').all()
+        # Get all users created in the last 6 months and group by month manually
+        recent_users = User.query.filter(User.created_at >= six_months_ago).all()
         
-        # Convert to plain Python types
-        monthly_signups = []
-        for m in monthly_signups_query:
-            month_val = m.month
-            monthly_signups.append({
-                "month": str(month_val) if month_val else None,
-                "count": int(m.count) if m.count else 0
-            })
+        # Group by month using Python
+        monthly_data = {}
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        for user in recent_users:
+            if user.created_at:
+                month_key = user.created_at.strftime('%Y-%m')
+                month_label = month_names[user.created_at.month - 1]
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = {'month': month_label, 'count': 0}
+                monthly_data[month_key]['count'] += 1
+        
+        # Sort by month and take last 6
+        sorted_months = sorted(monthly_data.values(), key=lambda x: x.get('count', 0), reverse=True)
+        monthly_signups = sorted_months[:6]
+        
+        # If no data, provide empty array
+        if not monthly_signups:
+            monthly_signups = []
         
         return {
             "bookings_by_status": bookings_by_status,
