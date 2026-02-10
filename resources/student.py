@@ -563,10 +563,10 @@ class StudentPayments(Resource):
         status = request.args.get('status')
         
         # Get user's bookings with payments
-        query = Booking.query.filter_by(student_id=user_id)
+        query = Booking.query.filter_by(student_id=user_id).join(Payment)
         
         if status:
-            query = query.filter(status=status)
+            query = query.filter(Payment.status == status)
         
         pagination = query.order_by(Booking.created_at.desc()).paginate(
             page=page,
