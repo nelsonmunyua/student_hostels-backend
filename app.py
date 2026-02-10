@@ -104,6 +104,14 @@ from resources.student import (
     StudentBookingDetail
 )
 
+from resources.host.host import (
+    HostDashboard, HostProfile, HostListings, HostListingDetail,
+    HostRooms, HostRoomDetail, HostBookings, HostBookingDetail,
+    HostEarnings, HostReviews, HostNotifications, HostNotificationDetail,
+    HostVerificationResource, HostSupport, HostSupportTickets, HostAnalytics
+)
+
+
 #postgresql://root:VcUrgCvgV0Qx4Y73mWH1aDbOhFUctzsD@dpg-d63mr9shg0os73ckn7o0-a.virginia-postgres.render.com/student_hostel_xopf
 
 
@@ -163,6 +171,25 @@ api.add_resource(StudentSupportTickets, "/student/support/tickets")
 api.add_resource(StudentDashboardStats, "/student/dashboard-stats")
 api.add_resource(StudentBookings, "/student/bookings")
 api.add_resource(StudentBookingDetail, "/student/bookings/<int:booking_id>")
+
+# Host Routes
+api.add_resource(HostDashboard, "/host/dashboard")
+api.add_resource(HostProfile, "/host/profile")
+api.add_resource(HostListings, "/host/listings")
+api.add_resource(HostListingDetail, "/host/listings/<int:hostel_id>")
+api.add_resource(HostRooms, "/host/rooms/<int:hostel_id>")
+api.add_resource(HostRoomDetail, "/host/rooms/<int:hostel_id>/<int:room_id>")
+api.add_resource(HostBookings, "/host/bookings")
+api.add_resource(HostBookingDetail, "/host/bookings/<int:booking_id>")
+api.add_resource(HostEarnings, "/host/earnings")
+api.add_resource(HostReviews, "/host/reviews")
+api.add_resource(HostNotifications, "/host/notifications")
+api.add_resource(HostNotificationDetail, "/host/notifications/<int:notification_id>")
+api.add_resource(HostVerificationResource, "/host/verification")
+api.add_resource(HostSupport, "/host/support")
+api.add_resource(HostSupportTickets, "/host/support/tickets")
+api.add_resource(HostAnalytics, "/host/analytics")
+
 
 
 @app.cli.command("seed")
