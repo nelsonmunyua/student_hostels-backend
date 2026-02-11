@@ -49,7 +49,7 @@ app.config["BUNDLE_ERRORS"] = True
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")
 app.config["JWT_ALGORITHM"] = "HS256"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 900        # 15 minutes
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 28800       # 8 hours
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 86400 * 7 # 7 days
 
 # Initialize extensions
@@ -65,8 +65,28 @@ from resources.auth import (
     Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
 )
 
+from resources.host import (
+    HostDashboardResource,
+    HostProfileResource,
+    HostListingsResource,
+    HostListingDetailResource,
+    HostRoomsResource,
+    HostRoomDetailResource,
+    HostBookingsResource,
+    HostBookingDetailResource,
+    HostEarningsResource,
+    HostReviewsResource,
+    HostAnalyticsResource,
+    HostNotificationsResource,
+    HostNotificationDetailResource,
+    HostVerificationResource,
+    HostSupportResource,
+    HostAvailabilityResource,
+    HostAvailabilityDetailResource
+)
+
 from resources.admin.admin import ( 
-    AdminDashboardResource, 
+    AdminDashboardResource,
     AdminUsersResource, 
     AdminUserStatusResource, 
     AdminAnalyticsResource,
@@ -234,6 +254,25 @@ def seed_command():
     with app.app_context():
         seed_database()
     print("Database seeded!")
+
+# Host Routes
+api.add_resource(HostDashboardResource, "/host/dashboard")
+api.add_resource(HostProfileResource, "/host/profile")
+api.add_resource(HostListingsResource, "/host/listings")
+api.add_resource(HostListingDetailResource, "/host/listings/<int:hostel_id>")
+api.add_resource(HostRoomsResource, "/host/rooms/<int:hostel_id>")
+api.add_resource(HostRoomDetailResource, "/host/rooms/<int:hostel_id>/<int:room_id>")
+api.add_resource(HostBookingsResource, "/host/bookings")
+api.add_resource(HostBookingDetailResource, "/host/bookings/<int:booking_id>")
+api.add_resource(HostEarningsResource, "/host/earnings")
+api.add_resource(HostReviewsResource, "/host/reviews")
+api.add_resource(HostAnalyticsResource, "/host/analytics")
+api.add_resource(HostNotificationsResource, "/host/notifications")
+api.add_resource(HostNotificationDetailResource, "/host/notifications/<int:notification_id>")
+api.add_resource(HostVerificationResource, "/host/verification")
+api.add_resource(HostSupportResource, "/host/support")
+api.add_resource(HostAvailabilityResource, "/host/availability")
+api.add_resource(HostAvailabilityDetailResource, "/host/availability/<int:hostel_id>")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
