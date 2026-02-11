@@ -124,6 +124,33 @@ from resources.student import (
     StudentBookingDetail
 )
 
+from resources.payment import (
+    PaymentResource,
+    MpesaPaymentResource,
+    MpesaStatusResource,
+    CardPaymentResource,
+    StripePaymentResource,
+    PaymentDetailResource,
+    PaymentByBookingResource,
+    PaymentStatsResource,
+    MpesaCallbackResource
+)
+
+from resources.host.host import (
+    HostDashboard, HostProfile, HostListings, HostListingDetail,
+    HostRooms, HostRoomDetail, HostBookings, HostBookingDetail,
+    HostEarnings, HostReviews, HostNotifications, HostNotificationDetail,
+    HostVerificationResource, HostSupport, HostSupportTickets, HostAnalytics
+)
+
+from resources.booking import (
+    BookingResource,
+    BookingDetailResource,
+    BookingAvailabilityResource,
+    BookingCancelResource
+)
+
+
 #postgresql://root:VcUrgCvgV0Qx4Y73mWH1aDbOhFUctzsD@dpg-d63mr9shg0os73ckn7o0-a.virginia-postgres.render.com/student_hostel_xopf
 
 
@@ -184,6 +211,42 @@ api.add_resource(StudentDashboardStats, "/student/dashboard-stats")
 api.add_resource(StudentBookings, "/student/bookings")
 api.add_resource(StudentBookingDetail, "/student/bookings/<int:booking_id>")
 
+# Payment Routes
+api.add_resource(PaymentResource, "/payments/initialize")
+api.add_resource(MpesaPaymentResource, "/payments/mpesa")
+api.add_resource(MpesaStatusResource, "/payments/mpesa/status/<checkout_request_id>")
+api.add_resource(CardPaymentResource, "/payments/card")
+api.add_resource(StripePaymentResource, "/payments/stripe/<action>")
+api.add_resource(PaymentDetailResource, "/payments/<int:payment_id>")
+api.add_resource(PaymentByBookingResource, "/payments/booking/<int:booking_id>")
+api.add_resource(PaymentStatsResource, "/payments/stats")
+api.add_resource(MpesaCallbackResource, "/payments/mpesa/callback")
+
+# Host Routes
+api.add_resource(HostDashboard, "/host/dashboard")
+api.add_resource(HostProfile, "/host/profile")
+api.add_resource(HostListings, "/host/listings")
+api.add_resource(HostListingDetail, "/host/listings/<int:hostel_id>")
+api.add_resource(HostRooms, "/host/rooms/<int:hostel_id>")
+api.add_resource(HostRoomDetail, "/host/rooms/<int:hostel_id>/<int:room_id>")
+api.add_resource(HostBookings, "/host/bookings")
+api.add_resource(HostBookingDetail, "/host/bookings/<int:booking_id>")
+api.add_resource(HostEarnings, "/host/earnings")
+api.add_resource(HostReviews, "/host/reviews")
+api.add_resource(HostNotifications, "/host/notifications")
+api.add_resource(HostNotificationDetail, "/host/notifications/<int:notification_id>")
+api.add_resource(HostVerificationResource, "/host/verification")
+api.add_resource(HostSupport, "/host/support")
+api.add_resource(HostSupportTickets, "/host/support/tickets")
+api.add_resource(HostAnalytics, "/host/analytics")
+
+# Booking Routes
+api.add_resource(BookingResource, "/bookings")
+api.add_resource(BookingDetailResource, "/bookings/<int:booking_id>")
+api.add_resource(BookingAvailabilityResource, "/bookings/check-availability")
+api.add_resource(BookingCancelResource, "/bookings/<int:booking_id>/cancel")
+
+
 
 @app.cli.command("seed")
 def seed_command():
@@ -212,5 +275,5 @@ api.add_resource(HostAvailabilityResource, "/host/availability")
 api.add_resource(HostAvailabilityDetailResource, "/host/availability/<int:hostel_id>")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
 

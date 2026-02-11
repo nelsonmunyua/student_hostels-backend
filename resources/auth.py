@@ -66,9 +66,16 @@ class Signup(Resource):
                 "message": "Account created successfully"
             }, 201
 
-        except IntegrityError:
+        except IntegrityError as e:
             db.session.rollback()
-            return {"message": "Email already exists"}, 400
+            # Check which constraint was violated
+            error_message = str(e).lower()
+            if "ix_users_email" in error_message or "email" in error_message:
+                return {"message": "Email already exists"}, 400
+            elif "ix_users_phone" in error_message or "phone" in error_message:
+                return {"message": "Phone number already exists"}, 400
+            else:
+                return {"message": "A user with this email or phone already exists"}, 400
         except Exception as e:
             db.session.rollback()
             return {"message": f"Signup failed: {str(e)}"}, 500

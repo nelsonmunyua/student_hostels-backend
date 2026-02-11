@@ -1,10 +1,13 @@
 # seed.py
 import random
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash
 
-# Import your models
+# Import your models and extensions
 from models import db, User, Token, Hostel, Room, Booking, Payment, Review, Wishlist, Notification, RoomAvailability, HostEarning, HostVerification, SupportTicket, Setting
+from flask_bcrypt import Bcrypt
+
+# Initialize bcrypt
+bcrypt = Bcrypt()
 
 def seed_database():
     """Main seeding function"""
@@ -174,7 +177,7 @@ def create_users():
             first_name=user_data["first_name"],
             last_name=user_data["last_name"],
             email=user_data["email"],
-            password_hash=generate_password_hash(user_data["password"]),
+            password_hash=bcrypt.generate_password_hash(user_data["password"]).decode("utf-8"),
             phone=user_data["phone"],
             role=user_data["role"],
             is_verified=user_data["is_verified"],
