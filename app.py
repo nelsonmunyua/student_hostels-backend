@@ -49,7 +49,7 @@ app.config["BUNDLE_ERRORS"] = True
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")
 app.config["JWT_ALGORITHM"] = "HS256"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 900        # 15 minutes
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 28800       # 8 hours
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 86400 * 7 # 7 days
 
 # Initialize extensions
@@ -65,8 +65,27 @@ from resources.auth import (
     Me, UpdateProfile, ChangePassword, ForgotPassword, ResetPassword
 )
 
+from resources.host import (
+    HostDashboard,
+    HostProfile,
+    HostListings,
+    HostListingDetail,
+    HostRooms,
+    HostRoomDetail,
+    HostBookings,
+    HostBookingDetail,
+    HostEarnings,
+    HostReviews,
+    HostNotifications,
+    HostNotificationDetail,
+    HostVerificationResource,
+    HostSupport,
+    HostSupportTickets,
+    HostAnalytics
+)
+
 from resources.admin.admin import ( 
-    AdminDashboardResource, 
+    AdminDashboardResource,
     AdminUsersResource, 
     AdminUserStatusResource, 
     AdminAnalyticsResource,
@@ -114,13 +133,6 @@ from resources.payment import (
     PaymentByBookingResource,
     PaymentStatsResource,
     MpesaCallbackResource
-)
-
-from resources.host.host import (
-    HostDashboard, HostProfile, HostListings, HostListingDetail,
-    HostRooms, HostRoomDetail, HostBookings, HostBookingDetail,
-    HostEarnings, HostReviews, HostNotifications, HostNotificationDetail,
-    HostVerificationResource, HostSupport, HostSupportTickets, HostAnalytics
 )
 
 from resources.booking import (

@@ -4,3 +4,5 @@
 instance/*.db
 __pycache__/
 *.pyc
+instance/student_hostel.db
+instance/student_hostel.db

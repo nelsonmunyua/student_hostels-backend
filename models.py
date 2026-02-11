@@ -173,6 +173,44 @@ class Booking(db.Model, SerializerMixin):
 
     payments = db.relationship("Payment", backref="booking", lazy=True)
 
+    # Relationship to student
+    student = db.relationship("User", foreign_keys=[student_id], backref="bookings")
+
+    def to_dict(self):
+        """Convert booking to dictionary with all related data"""
+        # Get student information
+        student = User.query.get(self.student_id)
+        guest_name = f"{student.first_name} {student.last_name}" if student else "Unknown Guest"
+        
+        # Get room and hostel information
+        room = Room.query.get(self.room_id)
+        hostel = Hostel.query.get(room.hostel_id) if room else None
+        property_name = hostel.name if hostel else "Unknown Property"
+        
+        # Format dates
+        check_in = self.start_date.strftime("%Y-%m-%d") if self.start_date else ""
+        check_out = self.end_date.strftime("%Y-%m-%d") if self.end_date else ""
+        created_at = self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else ""
+        
+        return {
+            "id": self.id,
+            "guest": guest_name,
+            "guest_id": self.student_id,
+            "property": property_name,
+            "property_id": room.hostel_id if room else None,
+            "room_id": self.room_id,
+            "room": room.to_dict() if room else None,
+            "hostel": hostel.to_dict() if hostel else None,
+            "checkIn": check_in,
+            "checkOut": check_out,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "amount": self.total_amount,
+            "total_amount": self.total_amount,
+            "status": self.status,
+            "created_at": created_at
+        }
+
 # =========================
 # PAYMENTS
 # =========================
