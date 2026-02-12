@@ -2,7 +2,7 @@ from flask import request
 from flask_restful import Resource, reqparse
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from functools import wraps
-from models import db, User, Hostel, Room, Booking, HostVerification, Payment, Review, Setting
+from models import db, User, Hostel, Room, Booking, HostVerification, Payment, Review, Setting, SupportTicket
 from flask import abort
 from datetime import datetime
 #from flask import User
@@ -713,6 +713,123 @@ class AdminSettingsResource(Resource):
         if setting:
             db.session.delete(setting)
             db.session.commit()
-            return {"message": "Setting deleted"}
+        return {"message": "Setting deleted"}
         return {"message": "Setting not found"}, 404
+
+
+# =========================
+# SUPPORT TICKET MANAGEMENT
+# =========================
+
+class AdminSupportTicketsResource(Resource):
+    """Get all support tickets (admin view)"""
+    
+    @jwt_required()
+    @admin_required
+    def get(self):
+        """Get all support tickets with optional filtering"""
+        # Get query parameters
+        status = request.args.get('status')
+        page = request.args.get('page', 1, type=int)
+        limit = request.args.get('limit', 20, type=int)
+        
+        # Build query
+        query = SupportTicket.query
+        
+        if status:
+            query = query.filter_by(status=status)
+        
+        # Paginate
+        pagination = query.order_by(SupportTicket.created_at.desc()).paginate(
+            page=page,
+            per_page=limit,
+            error_out=False
+        )
+        
+        tickets = []
+        for ticket in pagination.items:
+            # Get user info
+            user = User.query.get(ticket.user_id)
+            tickets.append({
+                'id': ticket.id,
+                'user_id': ticket.user_id,
+                'user_name': f"{user.first_name} {user.last_name}" if user else "Unknown",
+                'user_email': user.email if user else None,
+                'subject': ticket.subject,
+                'message': ticket.message,
+                'status': ticket.status,
+                'booking_id': ticket.booking_id,
+                'created_at': ticket.created_at.isoformat() if ticket.created_at else None
+            })
+        
+        return {
+            'tickets': tickets,
+            'total': pagination.total,
+            'page': pagination.page,
+            'pages': pagination.pages,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
+        }, 200
+
+
+class AdminSupportTicketDetailResource(Resource):
+    """Get single support ticket or update its status"""
+    
+    @jwt_required()
+    @admin_required
+    def get(self, ticket_id):
+        """Get single ticket details"""
+        ticket = SupportTicket.query.get_or_404(ticket_id)
+        
+        # Get user info
+        user = User.query.get(ticket.user_id)
+        
+        return {
+            'id': ticket.id,
+            'user_id': ticket.user_id,
+            'user_name': f"{user.first_name} {user.last_name}" if user else "Unknown",
+            'user_email': user.email if user else None,
+            'subject': ticket.subject,
+            'message': ticket.message,
+            'status': ticket.status,
+            'booking_id': ticket.booking_id,
+            'created_at': ticket.created_at.isoformat() if ticket.created_at else None
+        }, 200
+    
+    @jwt_required()
+    @admin_required
+    def patch(self, ticket_id):
+        """Update ticket status"""
+        data = request.get_json()
+        
+        if not data or 'status' not in data:
+            return {"message": "Status is required"}, 400
+        
+        valid_statuses = ['open', 'in_progress', 'resolved', 'closed']
+        if data['status'] not in valid_statuses:
+            return {"message": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}, 400
+        
+        ticket = SupportTicket.query.get_or_404(ticket_id)
+        ticket.status = data['status']
+        
+        db.session.commit()
+        
+        return {
+            "message": "Ticket status updated",
+            "status": ticket.status
+        }, 200
+    
+    @jwt_required()
+    @admin_required
+    def delete(self, ticket_id):
+        """Delete a support ticket"""
+        ticket = SupportTicket.query.get_or_404(ticket_id)
+        
+        try:
+            db.session.delete(ticket)
+            db.session.commit()
+            return {"message": "Ticket deleted successfully"}
+        except Exception as e:
+            db.session.rollback()
+            return {"message": "Failed to delete ticket", "error": str(e)}, 400
 

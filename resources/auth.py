@@ -127,6 +127,11 @@ class Logout(Resource):
             jti = jwt_data["jti"]
             user_id = get_jwt_identity()
 
+            # Check if token is already revoked to avoid duplicate entries
+            existing = Token.query.filter_by(token=jti, token_type="revoked").first()
+            if existing:
+                return {"message": "Already logged out"}, 200
+
             revoked = Token(
                 user_id=user_id,
                 token=jti, 
@@ -138,6 +143,10 @@ class Logout(Resource):
             db.session.commit()
 
             return {"message": "Logged out successfully. Token has been revoked."}, 200
+        except KeyError as e:
+            # Missing expected key in JWT
+            db.session.rollback()
+            return {"message": f"Invalid token format: {str(e)}"}, 400
         except Exception as e:
             db.session.rollback()
             return {"message": f"Logout failed: {str(e)}"}, 500

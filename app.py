@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 from flask_migrate import Migrate
 from models import db
 from flask_restful import Api
@@ -29,22 +29,59 @@ CORS(
     resources={r"/*": {"origins": allowed_origins}},
     supports_credentials=True,
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"]
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    expose_headers=["Content-Type", "Authorization"],
+    max_age=86400
 )
 
 # Load configuration
 app.config.from_object(Config)
 
-#app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
-database_url = os.getenv("DATABASE_URL")
+# Get database URL with SSL mode
+database_url = Config.get_database_url()
 if not database_url:
     raise RuntimeError("DATABASE_URL is not set")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
+# Connection pool settings for stability on Render
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,  # Verify connections before using
+    "pool_recycle": 300,    # Recycle connections every 5 minutes
+    "pool_size": 5,         # Base pool size
+    "max_overflow": 10,      # Allow up to 10 additional connections
+    "pool_timeout": 30,       # Timeout for getting connection from pool
+}
 
-app.config["SQLALCHEMY_ECHO"] = True
+app.config["SQLALCHEMY_ECHO"] = False  # Disable echo in production to reduce log noise
 app.config["BUNDLE_ERRORS"] = True
+
+
+# Handle OPTIONS requests for preflight CORS
+@app.route('/auth/signup', methods=['OPTIONS'])
+@app.route('/auth/login', methods=['OPTIONS'])
+@app.route('/auth/logout', methods=['OPTIONS'])
+@app.route('/auth/refresh', methods=['OPTIONS'])
+@app.route('/auth/me', methods=['OPTIONS'])
+@app.route('/auth/profile', methods=['OPTIONS'])
+@app.route('/auth/change-password', methods=['OPTIONS'])
+@app.route('/auth/verify-email', methods=['OPTIONS'])
+@app.route('/auth/forgot-password', methods=['OPTIONS'])
+@app.route('/auth/reset-password', methods=['OPTIONS'])
+@app.route('/host/dashboard', methods=['OPTIONS'])
+@app.route('/host/availability', methods=['OPTIONS'])
+@app.route('/bookings', methods=['OPTIONS'])
+@app.route('/payments/initialize', methods=['OPTIONS'])
+@app.route('/payments/mpesa', methods=['OPTIONS'])
+@app.route('/payments/card', methods=['OPTIONS'])
+def handle_cors_options():
+    """Handle OPTIONS preflight requests for CORS"""
+    response = make_response()
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+    response.headers['Access-Control-Max-Age'] = '86400'
+    return response
 
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")
@@ -81,7 +118,11 @@ from resources.host import (
     HostVerificationResource,
     HostSupport,
     HostSupportTickets,
-    HostAnalytics
+    HostAnalytics,
+    HostAvailability,
+    HostHostelAvailability,
+    HostRoomAvailabilityUpdate,
+    HostAvailabilityCalendar
 )
 
 from resources.admin.admin import ( 
@@ -100,7 +141,9 @@ from resources.admin.admin import (
     AdminPaymentStatusResourse, 
     AdminReviewDeleteResource, 
     AdminReviewResource,
-    AdminReviewStatusResource
+    AdminReviewStatusResource,
+    AdminSupportTicketsResource,
+    AdminSupportTicketDetailResource
 )
 
 from resources.student import (
@@ -184,6 +227,10 @@ api.add_resource(AdminHostVerificationAction, "/admin/verifications/<int:verific
 api.add_resource(AdminAnalyticsResource, "/admin/analytics")
 api.add_resource(AdminSettingsResource, "/admin/settings")
 
+# Admin Support Ticket Routes
+api.add_resource(AdminSupportTicketsResource, "/admin/support/tickets")
+api.add_resource(AdminSupportTicketDetailResource, "/admin/support/tickets/<int:ticket_id>")
+
 # Student Routes
 api.add_resource(StudentAccommodations, "/student/accommodations")
 api.add_resource(StudentAccommodationDetail, "/student/accommodations/<int:hostel_id>")
@@ -231,6 +278,12 @@ api.add_resource(HostVerificationResource, "/host/verification")
 api.add_resource(HostSupport, "/host/support")
 api.add_resource(HostSupportTickets, "/host/support/tickets")
 api.add_resource(HostAnalytics, "/host/analytics")
+
+# Host Availability Routes
+api.add_resource(HostAvailability, "/host/availability")
+api.add_resource(HostHostelAvailability, "/host/availability/<int:hostel_id>")
+api.add_resource(HostRoomAvailabilityUpdate, "/host/availability/room/<int:room_id>")
+api.add_resource(HostAvailabilityCalendar, "/host/availability/<int:hostel_id>/calendar")
 
 # Booking Routes
 api.add_resource(BookingResource, "/bookings")
