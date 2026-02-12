@@ -2,8 +2,8 @@ from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import and_, func
-from datetime import datetime, timedelta
-from models import db, User, Hostel, Room, Booking, Payment, Review, Notification, HostEarning, HostVerification, SupportTicket
+from datetime import datetime, timedelta, date
+from models import db, User, Hostel, Room, Booking, Payment, Review, Notification, HostEarning, HostVerification, SupportTicket, RoomAvailability
 
 
 def host_required(fn):
@@ -63,15 +63,23 @@ class HostDashboard(Resource):
             )
         ).count()
         
-        # Calculate earnings
-        earnings = db.session.query(
-            func.sum(HostEarning.net_amount)
-        ).filter(HostEarning.host_id == host_id).scalar() or 0
+        # Calculate earnings - safely handle if HostEarning table doesn't exist yet
+        try:
+            earnings_result = db.session.query(
+                func.sum(HostEarning.net_amount)
+            ).filter(HostEarning.host_id == host_id).scalar()
+            earnings = earnings_result if earnings_result else 0
+        except Exception as e:
+            print(f"Warning: Could not query earnings: {e}")
+            earnings = 0
         
         # Reviews and ratings
         reviews = Review.query.filter(Review.hostel_id.in_(hostel_ids)).all()
         total_reviews = len(reviews)
         avg_rating = sum(r.rating for r in reviews) / total_reviews if reviews else 0
+        
+        # Get host user once
+        host_user = User.query.get(host_id)
         
         # Recent bookings (last 5)
         recent_bookings_query = Booking.query.join(Room).filter(
@@ -125,7 +133,7 @@ class HostDashboard(Resource):
                 "total_earnings": int(earnings),
                 "avg_rating": round(avg_rating, 1),
                 "total_reviews": total_reviews,
-                "verified": User.query.get(host_id).is_verified if User.query.get(host_id) else False
+                "verified": host_user.is_verified if host_user else False
             },
             "recent_bookings": recent_bookings,
             "recent_reviews": reviews_list
@@ -556,29 +564,37 @@ class HostEarnings(Resource):
     def get(self):
         host_id = get_jwt_identity()
         
-        earnings = HostEarning.query.filter_by(host_id=host_id).all()
-        total = sum(e.net_amount for e in earnings) if earnings else 0
-        
-        # Monthly breakdown
-        monthly = []
-        for i in range(6):
-            month_start = datetime.utcnow().replace(day=1) - timedelta(days=30 * i)
-            month_earnings = HostEarning.query.filter(
-                and_(
-                    HostEarning.host_id == host_id,
-                    HostEarning.created_at >= month_start
-                )
-            ).all()
-            monthly.append({
-                'month': month_start.strftime('%Y-%m'),
-                'amount': sum(e.net_amount for e in month_earnings)
-            })
-        
-        return {
-            "total_earnings": total,
-            "monthly_earnings": monthly,
-            "total_transactions": len(earnings)
-        }, 200
+        try:
+            earnings = HostEarning.query.filter_by(host_id=host_id).all()
+            total = sum(e.net_amount for e in earnings) if earnings else 0
+            
+            # Monthly breakdown
+            monthly = []
+            for i in range(6):
+                month_start = datetime.utcnow().replace(day=1) - timedelta(days=30 * i)
+                month_earnings = HostEarning.query.filter(
+                    and_(
+                        HostEarning.host_id == host_id,
+                        HostEarning.created_at >= month_start
+                    )
+                ).all()
+                monthly.append({
+                    'month': month_start.strftime('%Y-%m'),
+                    'amount': sum(e.net_amount for e in month_earnings)
+                })
+            
+            return {
+                "total_earnings": total,
+                "monthly_earnings": monthly,
+                "total_transactions": len(earnings)
+            }, 200
+        except Exception as e:
+            return {
+                "total_earnings": 0,
+                "monthly_earnings": [],
+                "total_transactions": 0,
+                "message": "Earnings data not available"
+            }, 200
 
 
 class HostReviews(Resource):
@@ -794,5 +810,200 @@ class HostAnalytics(Resource):
             'occupancy_rate': round(occupancy_rate, 1),
             'total_hostels': len(hostel_ids),
             'total_rooms': len(rooms)
+        }, 200
+
+
+class HostAvailability(Resource):
+    """Get all hostels with rooms and availability for host"""
+    
+    @jwt_required()
+    @host_required
+    def get(self):
+        host_id = get_jwt_identity()
+        hostels = Hostel.query.filter_by(host_id=host_id).all()
+        
+        result = []
+        for h in hostels:
+            rooms = Room.query.filter_by(hostel_id=h.id).all()
+            rooms_data = []
+            for r in rooms:
+                # Get availability for next 30 days
+                from datetime import date
+                today = date.today()
+                availabilities = RoomAvailability.query.filter(
+                    and_(
+                        RoomAvailability.room_id == r.id,
+                        RoomAvailability.date >= today,
+                        RoomAvailability.date <= today + timedelta(days=30)
+                    )
+                ).all()
+                
+                rooms_data.append({
+                    'id': r.id,
+                    'room_type': r.room_type,
+                    'price': r.price,
+                    'capacity': r.capacity,
+                    'available_units': r.available_units,
+                    'is_available': r.is_available,
+                    'availability': [{
+                        'date': a.date.isoformat(),
+                        'is_available': a.is_available
+                    } for a in availabilities]
+                })
+            
+            result.append({
+                'id': h.id,
+                'name': h.name,
+                'location': h.location,
+                'rooms': rooms_data
+            })
+        
+        return {"hostels": result}, 200
+
+
+class HostHostelAvailability(Resource):
+    """Get specific hostel availability"""
+    
+    @jwt_required()
+    @host_required
+    def get(self, hostel_id):
+        host_id = get_jwt_identity()
+        
+        hostel = Hostel.query.filter_by(id=hostel_id, host_id=host_id).first()
+        if not hostel:
+            return {"message": "Hostel not found"}, 404
+        
+        rooms = Room.query.filter_by(hostel_id=hostel_id).all()
+        
+        rooms_data = []
+        for r in rooms:
+            from datetime import date
+            today = date.today()
+            availabilities = RoomAvailability.query.filter(
+                and_(
+                    RoomAvailability.room_id == r.id,
+                    RoomAvailability.date >= today,
+                    RoomAvailability.date <= today + timedelta(days=30)
+                )
+            ).all()
+            
+            rooms_data.append({
+                'id': r.id,
+                'room_type': r.room_type,
+                'price': r.price,
+                'capacity': r.capacity,
+                'available_units': r.available_units,
+                'is_available': r.is_available,
+                'availability': [{
+                    'date': a.date.isoformat(),
+                    'is_available': a.is_available
+                } for a in availabilities]
+            })
+        
+        return {
+            'id': hostel.id,
+            'name': hostel.name,
+            'location': hostel.location,
+            'rooms': rooms_data
+        }, 200
+
+
+class HostRoomAvailabilityUpdate(Resource):
+    """Update availability for a specific room and date"""
+    
+    @jwt_required()
+    @host_required
+    def post(self, room_id):
+        host_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Verify room belongs to host
+        room = Room.query.join(Hostel).filter(
+            and_(
+                Room.id == room_id,
+                Hostel.host_id == host_id
+            )
+        ).first()
+        
+        if not room:
+            return {"message": "Room not found or access denied"}, 404
+        
+        try:
+            date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        except (ValueError, KeyError):
+            return {"message": "Invalid date format. Use YYYY-MM-DD"}, 400
+        
+        # Check if availability record exists
+        availability = RoomAvailability.query.filter_by(
+            room_id=room_id,
+            date=date_obj
+        ).first()
+        
+        if availability:
+            availability.is_available = data.get('is_available', True)
+        else:
+            availability = RoomAvailability(
+                room_id=room_id,
+                date=date_obj,
+                is_available=data.get('is_available', True)
+            )
+            db.session.add(availability)
+        
+        db.session.commit()
+        
+        return {"message": "Availability updated"}, 200
+
+
+class HostAvailabilityCalendar(Resource):
+    """Get availability calendar for a hostel"""
+    
+    @jwt_required()
+    @host_required
+    def get(self, hostel_id):
+        host_id = get_jwt_identity()
+        year_month = request.args.get('year_month')
+        
+        hostel = Hostel.query.filter_by(id=hostel_id, host_id=host_id).first()
+        if not hostel:
+            return {"message": "Hostel not found"}, 404
+        
+        try:
+            year, month = map(int, year_month.split('-'))
+        except (ValueError, AttributeError):
+            # Default to current month
+            now = datetime.now()
+            year, month = now.year, now.month
+        
+        from calendar import monthrange
+        _, num_days = monthrange(year, month)
+        
+        rooms = Room.query.filter_by(hostel_id=hostel_id).all()
+        
+        calendar_data = []
+        for day in range(1, num_days + 1):
+            date_obj = date(year, month, day)
+            day_availability = {}
+            
+            for r in rooms:
+                availability = RoomAvailability.query.filter_by(
+                    room_id=r.id,
+                    date=date_obj
+                ).first()
+                
+                day_availability[r.id] = {
+                    'room_type': r.room_type,
+                    'is_available': availability.is_available if availability else r.is_available
+                }
+            
+            calendar_data.append({
+                'date': date_obj.isoformat(),
+                'day': day,
+                'rooms': day_availability
+            })
+        
+        return {
+            'hostel_id': hostel_id,
+            'year_month': f"{year}-{month:02d}",
+            'calendar': calendar_data
         }, 200
 
