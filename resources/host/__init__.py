@@ -15,6 +15,10 @@ from .host import (
     HostVerificationResource,
     HostSupport,
     HostSupportTickets,
-    HostAnalytics
+    HostAnalytics,
+    HostAvailability,
+    HostHostelAvailability,
+    HostRoomAvailabilityUpdate,
+    HostAvailabilityCalendar
 )
 
