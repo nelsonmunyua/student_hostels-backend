@@ -33,7 +33,8 @@ CORS(
     methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=86400
+    max_age=86400,
+    automatic_options=True  # Let Flask-CORS handle OPTIONS automatically
 )
 
 # Load configuration
@@ -57,35 +58,6 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 
 app.config["SQLALCHEMY_ECHO"] = False  # Disable echo in production to reduce log noise
 app.config["BUNDLE_ERRORS"] = True
-
-
-# Handle OPTIONS requests for preflight CORS
-@app.route('/auth/signup', methods=['OPTIONS'])
-@app.route('/auth/login', methods=['OPTIONS'])
-@app.route('/auth/logout', methods=['OPTIONS'])
-@app.route('/auth/refresh', methods=['OPTIONS'])
-@app.route('/auth/me', methods=['OPTIONS'])
-@app.route('/auth/profile', methods=['OPTIONS'])
-@app.route('/auth/change-password', methods=['OPTIONS'])
-@app.route('/auth/verify-email', methods=['OPTIONS'])
-@app.route('/auth/forgot-password', methods=['OPTIONS'])
-@app.route('/auth/reset-password', methods=['OPTIONS'])
-@app.route('/host/dashboard', methods=['OPTIONS'])
-@app.route('/host/availability', methods=['OPTIONS'])
-@app.route('/accommodations', methods=['OPTIONS'])
-@app.route('/accommodations/<path:subpath>', methods=['OPTIONS'])
-@app.route('/bookings', methods=['OPTIONS'])
-@app.route('/payments/initialize', methods=['OPTIONS'])
-@app.route('/payments/mpesa', methods=['OPTIONS'])
-@app.route('/payments/card', methods=['OPTIONS'])
-def handle_cors_options():
-    """Handle OPTIONS preflight requests for CORS"""
-    response = make_response()
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-    response.headers['Access-Control-Max-Age'] = '86400'
-    return response
 
 # Legacy route handler for /accommodations - maps to student endpoint
 @app.route('/accommodations', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
