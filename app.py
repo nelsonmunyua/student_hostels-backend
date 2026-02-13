@@ -4,14 +4,22 @@ from models import db
 from flask_restful import Api
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
-from flask_mail import Mail
 from config import Config
 from dotenv import load_dotenv
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from seed import seed_database
 from jwt.exceptions import ExpiredSignatureError as JWTExpiredError
 from jwt.exceptions import InvalidTokenError
 import os
+
+# Import Flask-Mail with try/except to handle case where it's not available
+try:
+    from flask_mail import Mail
+    FLASK_MAIL_AVAILABLE = True
+except ImportError:
+    FLASK_MAIL_AVAILABLE = False
+    Mail = None
+
 # Load environment variables
 load_dotenv(override=True)
 
@@ -113,14 +121,17 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-# Only initialize Flask-Mail if email settings are configured
-mail_configured = Config.MAIL_SERVER and Config.MAIL_USERNAME
-if mail_configured:
-    mail = Mail(app)
-    print("Email service initialized")
+# Initialize Flask-Mail with proper error handling
+if FLASK_MAIL_AVAILABLE:
+    try:
+        mail = Mail(app)
+        print("Email service initialized")
+    except Exception as e:
+        print(f"Warning: Flask-Mail initialization failed: {e}")
+        mail = None
 else:
     mail = None
-    print("Email service NOT configured - emails will be skipped")
+    print("Flask-Mail not available - emails will be skipped")
 
 from resources.auth import (
     Signup, Login, RefreshToken, Logout, VerifyEmail, 

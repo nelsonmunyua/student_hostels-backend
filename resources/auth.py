@@ -303,8 +303,14 @@ class ForgotPassword(Resource):
             db.session.add(token)
             db.session.commit()
 
-            send_password_reset_email(user, token_value)
+            # Try to send password reset email, but don't fail if it errors
+            try:
+                send_password_reset_email(user, token_value)
+            except Exception as email_error:
+                # Log the error but don't reveal to user
+                print(f"Password reset email failed: {email_error}")
 
+        # Always return the same message to prevent email enumeration
         return {"message": "If email exists, reset link sent"}, 200
     
     
