@@ -19,14 +19,17 @@ class BookingResource(Resource):
         user_id = get_jwt_identity()
         
         data = request.get_json()
-        hostel_id = data.get('hostel_id') if data else None
-        room_id = data.get('room_id') if data else None
-        start_date = data.get('start_date') if data else None
-        end_date = data.get('end_date') if data else None
+        
+        # Accept both naming conventions (frontend uses accommodation_id, hostel_id)
+        hostel_id = data.get('hostel_id') or data.get('accommodation_id')
+        room_id = data.get('room_id')
+        # Accept both date formats
+        start_date = data.get('start_date') or data.get('check_in')
+        end_date = data.get('end_date') or data.get('check_out')
         
         # Validate required fields
         if not hostel_id or not start_date or not end_date:
-            return {"message": "hostel_id, start_date, and end_date are required"}, 400
+            return {"message": "hostel_id (or accommodation_id), start_date (or check_in), and end_date (or check_out) are required"}, 400
         
         # Parse dates
         try:
@@ -85,7 +88,7 @@ class BookingResource(Resource):
         if conflicting:
             return {"message": "Room is not available for the selected dates"}, 400
         
-        # Calculate total amount
+        # Calculate total amount (price is per month)
         days = (end_date - start_date).days
         months = max(1, days // 30)  # Minimum 1 month
         total_amount = room.price * months
@@ -206,10 +209,8 @@ class BookingDetailResource(Resource):
 class BookingAvailabilityResource(Resource):
     """Check room availability"""
     
-    @jwt_required()
     def post(self):
-        user_id = get_jwt_identity()
-        
+        """Check room availability - no auth required for public availability check"""
         data = request.get_json()
         hostel_id = data.get('hostel_id') if data else None
         room_id = data.get('room_id') if data else None
