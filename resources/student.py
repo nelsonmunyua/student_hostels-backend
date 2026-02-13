@@ -30,13 +30,14 @@ class StudentAccommodations(Resource):
         max_price = request.args.get('max_price', type=int)
         room_type = request.args.get('room_type')
         
-        # Build query
-        query = Hostel.query.filter(
+        # Build query - join with rooms to filter by room price
+        query = db.session.query(Hostel).join(Room).filter(
             and_(
                 Hostel.is_active == True,
-                Hostel.is_verified == True
+                Hostel.is_verified == True,
+                Room.is_available == True
             )
-        )
+        ).distinct()
         
         # Apply filters
         if location:
@@ -49,13 +50,13 @@ class StudentAccommodations(Resource):
             )
         
         if min_price:
-            query = query.filter(Hostel.price >= min_price)
+            query = query.filter(Room.price >= min_price)
         
         if max_price:
-            query = query.filter(Hostel.price <= max_price)
+            query = query.filter(Room.price <= max_price)
         
         if room_type:
-            query = query.filter(Hostel.room_type == room_type)
+            query = query.filter(Room.room_type == room_type)
         
         # Get accommodations with pagination
         pagination = query.paginate(
@@ -77,7 +78,7 @@ class StudentAccommodations(Resource):
             ).first() is not None
             
             # Get rooms and price
-            rooms = Room.query.filter_by(hostel_id=hostel.id).all()
+            rooms = Room.query.filter_by(hostel_id=hostel.id, is_available=True).all()
             hostel_min_price = min(room.price for room in rooms) if rooms else 0
             hostel_room_type = rooms[0].room_type if rooms else None
             
@@ -106,7 +107,16 @@ class StudentAccommodations(Resource):
                 'rating': round(avg_rating, 1),
                 'review_count': len(reviews),
                 'is_in_wishlist': in_wishlist,
-                'available_rooms': sum(room.available_units for room in rooms) if rooms else 0
+                'available_rooms': sum(room.available_units for room in rooms) if rooms else 0,
+                # Include individual room details
+                'rooms': [{
+                    'id': room.id,
+                    'room_type': room.room_type,
+                    'price': room.price,
+                    'capacity': room.capacity,
+                    'available_units': room.available_units,
+                    'is_available': room.is_available
+                } for room in rooms]
             })
         
         return {

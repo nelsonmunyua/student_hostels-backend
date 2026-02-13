@@ -723,53 +723,113 @@ class AdminSettingsResource(Resource):
 
 class AdminSupportTicketsResource(Resource):
     """Get all support tickets (admin view)"""
-    
+
     @jwt_required()
     @admin_required
     def get(self):
         """Get all support tickets with optional filtering"""
-        # Get query parameters
-        status = request.args.get('status')
-        page = request.args.get('page', 1, type=int)
-        limit = request.args.get('limit', 20, type=int)
-        
-        # Build query
-        query = SupportTicket.query
-        
-        if status:
-            query = query.filter_by(status=status)
-        
-        # Paginate
-        pagination = query.order_by(SupportTicket.created_at.desc()).paginate(
-            page=page,
-            per_page=limit,
-            error_out=False
-        )
-        
-        tickets = []
-        for ticket in pagination.items:
-            # Get user info
-            user = User.query.get(ticket.user_id)
-            tickets.append({
-                'id': ticket.id,
-                'user_id': ticket.user_id,
-                'user_name': f"{user.first_name} {user.last_name}" if user else "Unknown",
-                'user_email': user.email if user else None,
-                'subject': ticket.subject,
-                'message': ticket.message,
-                'status': ticket.status,
-                'booking_id': ticket.booking_id,
-                'created_at': ticket.created_at.isoformat() if ticket.created_at else None
-            })
-        
-        return {
-            'tickets': tickets,
-            'total': pagination.total,
-            'page': pagination.page,
-            'pages': pagination.pages,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
-        }, 200
+        try:
+            # Get query parameters
+            page = request.args.get('page', 1, type=int)
+            limit = request.args.get('limit', 20, type=int)
+            status = request.args.get('status')
+
+            # Build query
+            query = SupportTicket.query
+
+            if status:
+                query = query.filter_by(status=status)
+
+            # Check if table has data first
+            total_count = query.count()
+
+            if total_count == 0:
+                return {
+                    'tickets': [],
+                    'total': 0,
+                    'page': 1,
+                    'pages': 1,
+                    'has_next': False,
+                    'has_prev': False
+                }, 200
+
+            # Paginate - handle older SQLAlchemy versions
+            try:
+                pagination = query.order_by(SupportTicket.created_at.desc()).paginate(
+                    page=page,
+                    per_page=limit,
+                    error_out=False
+                )
+            except Exception:
+                # Fallback for older SQLAlchemy versions
+                offset = (page - 1) * limit
+                items = query.order_by(SupportTicket.created_at.desc()).offset(offset).limit(limit).all()
+                pagination_items = items
+                total_pages = (total_count + limit - 1) // limit if limit > 0 else 1
+
+                tickets = []
+                for ticket in pagination_items:
+                    # Get user info
+                    user = User.query.get(ticket.user_id)
+                    tickets.append({
+                        'id': ticket.id,
+                        'user_id': ticket.user_id,
+                        'user_name': f"{user.first_name} {user.last_name}" if user else "Unknown",
+                        'user_email': user.email if user else None,
+                        'subject': ticket.subject,
+                        'message': ticket.message,
+                        'status': ticket.status,
+                        'booking_id': getattr(ticket, 'booking_id', None),
+                        'created_at': ticket.created_at.isoformat() if ticket.created_at else None
+                    })
+
+                return {
+                    'tickets': tickets,
+                    'total': total_count,
+                    'page': page,
+                    'pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_prev': page > 1
+                }, 200
+
+            tickets = []
+            for ticket in pagination.items:
+                # Get user info
+                user = User.query.get(ticket.user_id)
+                tickets.append({
+                    'id': ticket.id,
+                    'user_id': ticket.user_id,
+                    'user_name': f"{user.first_name} {user.last_name}" if user else "Unknown",
+                    'user_email': user.email if user else None,
+                    'subject': ticket.subject,
+                    'message': ticket.message,
+                    'status': ticket.status,
+                    'booking_id': getattr(ticket, 'booking_id', None),
+                    'created_at': ticket.created_at.isoformat() if ticket.created_at else None
+                })
+
+            return {
+                'tickets': tickets,
+                'total': pagination.total,
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            }, 200
+
+        except Exception as e:
+            # Log the error
+            print(f"Error fetching support tickets: {str(e)}")
+            # Return empty data instead of 500
+            return {
+                'tickets': [],
+                'total': 0,
+                'page': 1,
+                'pages': 1,
+                'has_next': False,
+                'has_prev': False,
+                'error': str(e) if os.getenv('FLASK_DEBUG') else None
+            }, 200
 
 
 class AdminSupportTicketDetailResource(Resource):

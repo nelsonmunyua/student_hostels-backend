@@ -9,6 +9,8 @@ from config import Config
 from dotenv import load_dotenv
 from flask_cors import CORS, cross_origin
 from seed import seed_database
+from jwt.exceptions import ExpiredSignatureError as JWTExpiredError
+from jwt.exceptions import InvalidTokenError
 import os
 # Load environment variables
 load_dotenv(override=True)
@@ -86,8 +88,8 @@ def handle_cors_options():
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")
 app.config["JWT_ALGORITHM"] = "HS256"
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 28800       # 8 hours
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 86400 * 7 # 7 days
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400 * 7      # 7 days (was 8 hours)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 86400 * 30 # 30 days (was 7 days)
 
 # Initialize extensions
 db.init_app(app)
@@ -300,6 +302,21 @@ def seed_command():
         seed_database()
     print("Database seeded!")
 
+# JWT Error Handlers - Return proper 401 for expired/invalid tokens
+@app.errorhandler(JWTExpiredError)
+def handle_jwt_expired(error):
+    return {"message": "Token has expired. Please log in again."}, 401
+
+@app.errorhandler(InvalidTokenError)
+def handle_jwt_invalid(error):
+    return {"message": "Invalid token. Please log in again."}, 401
+
+@app.errorhandler(Exception)
+def handle_all_errors(error):
+    """Catch-all error handler"""
+    # Return 500 for unhandled exceptions
+    return {"message": "An unexpected error occurred."}, 500
+
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
 

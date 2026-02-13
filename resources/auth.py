@@ -5,6 +5,7 @@ from flask_bcrypt import Bcrypt
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta
 import uuid
+from jwt.exceptions import ExpiredSignatureError
 
 from models import db, User, Token
 #from extensions import db
@@ -219,6 +220,9 @@ class VerifyEmail(Resource):
         if not token_value:
             from flask import redirect
             frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+            # Support both localhost and deployed Vercel frontend
+            if not frontend_url:
+                frontend_url = "http://localhost:5173"
             return redirect(f"{frontend_url}/login?error=verification_failed&message=Token is required")
             
         result = self._verify_token(token_value)
@@ -227,12 +231,16 @@ class VerifyEmail(Resource):
         if result[1] == 200:
             from flask import redirect
             frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+            if not frontend_url:
+                frontend_url = "http://localhost:5173"
             return redirect(f"{frontend_url}/login?verified=true")
         
         # If verification failed, redirect to login with error
         error_message = result[0].get("message", "Verification failed")
         from flask import redirect
         frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        if not frontend_url:
+            frontend_url = "http://localhost:5173"
         return redirect(f"{frontend_url}/login?error=verification_failed&message={error_message}")
     
     def post(self):
@@ -305,6 +313,8 @@ class ResetPassword(Resource):
         """Handle GET requests - redirect to frontend with token"""
         token_value = request.args.get("token")
         frontend_url = current_app.config.get("FRONTEND_URL", "http://localhost:5173")
+        if not frontend_url:
+            frontend_url = "http://localhost:5173"
         
         if not token_value:
             # Redirect to frontend with error
