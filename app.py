@@ -22,7 +22,7 @@ app = Flask(__name__)
 # Allow all origins in development
 allowed_origins = [
     "http://localhost:5173",  # local dev
-    "https://student-hostels-frontend-3d23.vercel.app",  # your deployed frontend
+    "https://student-hostels-frontend.vercel.app",  # your deployed frontend
     "*"  # Allow all origins in development
 ]
 

@@ -4,7 +4,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
     
     # Frontend URL for redirects
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://student-hostels-frontend.vercel.app")
 
     # Flask-Mail Configuration
     MAIL_SERVER = os.getenv("MAIL_SERVER")
