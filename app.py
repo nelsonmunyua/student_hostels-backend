@@ -218,7 +218,21 @@ from resources.booking import (
     BookingResource,
     BookingDetailResource,
     BookingAvailabilityResource,
-    BookingCancelResource
+    BookingCancelResource,
+    BookingPriceCalculationResource
+)
+
+from resources.reviews import (
+    AccommodationReviews,
+    ReviewDetail,
+    CreateReview,
+    UpdateReview,
+    ReviewStats,
+    ReviewAverageRating,
+    CanReview,
+    LikeReview,
+    RecentReviews,
+    TopRatedAccommodations
 )
 
 
@@ -326,6 +340,19 @@ api.add_resource(BookingResource, "/bookings")
 api.add_resource(BookingDetailResource, "/bookings/<int:booking_id>")
 api.add_resource(BookingAvailabilityResource, "/bookings/check-availability")
 api.add_resource(BookingCancelResource, "/bookings/<int:booking_id>/cancel")
+api.add_resource(BookingPriceCalculationResource, "/bookings/calculate-price")
+
+# Review Routes
+api.add_resource(AccommodationReviews, "/accommodations/<int:accommodation_id>/reviews")
+api.add_resource(ReviewStats, "/accommodations/<int:accommodation_id>/reviews/stats")
+api.add_resource(ReviewAverageRating, "/accommodations/<int:accommodation_id>/reviews/average")
+api.add_resource(ReviewDetail, "/reviews/<int:review_id>")
+api.add_resource(CreateReview, "/reviews")
+api.add_resource(UpdateReview, "/reviews/<int:review_id>")
+api.add_resource(CanReview, "/reviews/can-review/<int:accommodation_id>")
+api.add_resource(LikeReview, "/reviews/<int:review_id>/like")
+api.add_resource(RecentReviews, "/reviews/recent")
+api.add_resource(TopRatedAccommodations, "/reviews/top-rated")
 
 
 

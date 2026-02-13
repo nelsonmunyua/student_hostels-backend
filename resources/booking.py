@@ -318,3 +318,59 @@ class BookingCancelResource(Resource):
             }
         }, 200
 
+
+class BookingPriceCalculationResource(Resource):
+    """Calculate booking price without creating booking"""
+    
+    @jwt_required()
+    def post(self):
+        """Calculate the price for a potential booking"""
+        data = request.get_json()
+        
+        # Accept both naming conventions
+        hostel_id = data.get('hostel_id') or data.get('accommodation_id')
+        room_id = data.get('room_id')
+        start_date = data.get('start_date') or data.get('check_in')
+        end_date = data.get('end_date') or data.get('check_out')
+        
+        if not hostel_id or not start_date or not end_date:
+            return {"message": "hostel_id, start_date, and end_date are required"}, 400
+        
+        # Parse dates
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            return {"message": "Invalid date format. Use YYYY-MM-DD"}, 400
+        
+        if end_date <= start_date:
+            return {"message": "End date must be after start date"}, 400
+        
+        # Get hostel
+        hostel = Hostel.query.get(hostel_id)
+        if not hostel:
+            return {"message": "Hostel not found"}, 404
+        
+        # Get room
+        if room_id:
+            room = Room.query.filter_by(id=room_id, hostel_id=hostel_id).first()
+        else:
+            room = Room.query.filter_by(hostel_id=hostel_id, is_available=True).first()
+        
+        if not room:
+            return {"message": "No available rooms at this hostel"}, 400
+        
+        # Calculate price
+        days = (end_date - start_date).days
+        nights = days  # Assuming price is per night
+        subtotal = room.price * nights
+        total_price = subtotal  # Can add tax, fees, etc. here
+        
+        return {
+            'nights': nights,
+            'price_per_night': room.price,
+            'subtotal': subtotal,
+            'total_price': total_price,
+            'room_type': room.room_type
+        }, 200
+
