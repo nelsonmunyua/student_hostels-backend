@@ -112,7 +112,15 @@ migrate = Migrate(app, db)
 api = Api(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-mail = Mail(app)
+
+# Only initialize Flask-Mail if email settings are configured
+mail_configured = Config.MAIL_SERVER and Config.MAIL_USERNAME
+if mail_configured:
+    mail = Mail(app)
+    print("Email service initialized")
+else:
+    mail = None
+    print("Email service NOT configured - emails will be skipped")
 
 from resources.auth import (
     Signup, Login, RefreshToken, Logout, VerifyEmail, 

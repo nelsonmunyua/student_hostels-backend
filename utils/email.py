@@ -31,6 +31,14 @@ def confirm_email_token(token, expiration=3600):
 # ---------------------------------------
 
 def send_email(subject, recipients, html_body):
+    # Check if mail is configured before trying to send
+    mail_server = current_app.config.get("MAIL_SERVER")
+    mail_username = current_app.config.get("MAIL_USERNAME")
+    
+    if not mail_server or not mail_username:
+        print(f"Email not configured. Skipping email: {subject} to {recipients}")
+        return False
+    
     mail = current_app.extensions.get("mail")
 
     if not mail:
@@ -44,6 +52,7 @@ def send_email(subject, recipients, html_body):
     )
 
     mail.send(msg)
+    return True
 
 
 # ---------------------------------------
