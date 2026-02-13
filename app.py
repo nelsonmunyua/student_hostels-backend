@@ -72,6 +72,8 @@ app.config["BUNDLE_ERRORS"] = True
 @app.route('/auth/reset-password', methods=['OPTIONS'])
 @app.route('/host/dashboard', methods=['OPTIONS'])
 @app.route('/host/availability', methods=['OPTIONS'])
+@app.route('/accommodations', methods=['OPTIONS'])
+@app.route('/accommodations/<path:subpath>', methods=['OPTIONS'])
 @app.route('/bookings', methods=['OPTIONS'])
 @app.route('/payments/initialize', methods=['OPTIONS'])
 @app.route('/payments/mpesa', methods=['OPTIONS'])
@@ -84,6 +86,47 @@ def handle_cors_options():
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS'
     response.headers['Access-Control-Max-Age'] = '86400'
     return response
+
+# Legacy route handler for /accommodations - maps to student endpoint
+@app.route('/accommodations', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+@app.route('/accommodations/<path:subpath>', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
+def handle_accommodations_legacy(subpath=None):
+    """Handle requests to legacy /accommodations endpoint - redirect to correct endpoints"""
+    from flask import request, redirect
+    
+    # Get the request method
+    method = request.method
+    
+    # Handle GET requests - redirect to student accommodations
+    if method == 'GET':
+        if subpath and subpath.isdigit():
+            # GET /accommodations/{id} -> /student/accommodations/{id}
+            return redirect(f'/student/accommodations/{subpath}', code=307)
+        else:
+            # GET /accommodations -> /student/accommodations
+            return redirect('/student/accommodations', code=307)
+    
+    # Handle POST requests - redirect to host listings
+    if method == 'POST':
+        # POST /accommodations -> /host/listings (for hosts)
+        return redirect('/host/listings', code=307)
+    
+    # Handle PUT/PATCH/DELETE requests
+    if method in ['PUT', 'PATCH', 'DELETE']:
+        if subpath and subpath.isdigit():
+            # PUT/PATCH/DELETE /accommodations/{id} -> /host/listings/{id}
+            return redirect(f'/host/listings/{subpath}', code=307)
+    
+    # Default: return 404
+    return {
+        "error": "Endpoint not found",
+        "message": "The /accommodations endpoint has been moved.",
+        "suggestions": {
+            "GET": "Use /student/accommodations to get student accommodations",
+            "POST": "Hosts should use /host/listings to create new listings",
+            "admin": "Admins should use /admin/hostels"
+        }
+    }, 404
 
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-super-secret")

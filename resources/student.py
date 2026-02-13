@@ -14,14 +14,8 @@ from models import db, User, Hostel, Room, Booking, Payment, Review, Wishlist, N
 class StudentAccommodations(Resource):
     """Get all available accommodations for students"""
     
-    @jwt_required()
     def get(self):
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
-        
-        if not user or user.role not in ['student', 'host']:
-            return {"message": "Unauthorized access"}, 403
-        
+        """Public endpoint - no authentication required for viewing accommodations"""
         # Get query parameters from request.args
         page = request.args.get('page', 1, type=int)
         limit = request.args.get('limit', 12, type=int)
@@ -30,14 +24,25 @@ class StudentAccommodations(Resource):
         max_price = request.args.get('max_price', type=int)
         room_type = request.args.get('room_type')
         
-        # Build query - join with rooms to filter by room price
-        query = db.session.query(Hostel).join(Room).filter(
+        # Try to get user_id from JWT if available (for wishlist check)
+        user_id = None
+        try:
+            user_id = get_jwt_identity()
+        except:
+            pass  # User not authenticated, that's okay for public endpoint
+        
+        # Build query - get active and verified hostels with available rooms
+        # Using subquery to avoid DISTINCT issues with JSON columns
+        from sqlalchemy import select
+        room_subquery = select(Room.hostel_id).where(Room.is_available == True).distinct()
+        
+        query = Hostel.query.filter(
             and_(
                 Hostel.is_active == True,
                 Hostel.is_verified == True,
-                Room.is_available == True
+                Hostel.id.in_(room_subquery)
             )
-        ).distinct()
+        )
         
         # Apply filters
         if location:
@@ -49,15 +54,6 @@ class StudentAccommodations(Resource):
                 )
             )
         
-        if min_price:
-            query = query.filter(Room.price >= min_price)
-        
-        if max_price:
-            query = query.filter(Room.price <= max_price)
-        
-        if room_type:
-            query = query.filter(Room.room_type == room_type)
-        
         # Get accommodations with pagination
         pagination = query.paginate(
             page=page, 
@@ -67,20 +63,36 @@ class StudentAccommodations(Resource):
         
         accommodations = []
         for hostel in pagination.items:
+            # Get rooms for this hostel (filter by price after fetching)
+            rooms = Room.query.filter_by(hostel_id=hostel.id, is_available=True).all()
+            
+            # Apply price filters in memory if needed
+            filtered_rooms = rooms
+            if min_price:
+                filtered_rooms = [r for r in filtered_rooms if r.price >= min_price]
+            if max_price:
+                filtered_rooms = [r for r in filtered_rooms if r.price <= max_price]
+            if room_type:
+                filtered_rooms = [r for r in filtered_rooms if r.room_type == room_type]
+            
+            if not filtered_rooms:
+                continue
+            
             # Get average rating
             reviews = Review.query.filter_by(hostel_id=hostel.id).all()
             avg_rating = sum(r.rating for r in reviews) / len(reviews) if reviews else 0
             
-            # Check if in wishlist
-            in_wishlist = Wishlist.query.filter_by(
-                user_id=user_id, 
-                hostel_id=hostel.id
-            ).first() is not None
+            # Check if in wishlist (only if user is authenticated)
+            in_wishlist = False
+            if user_id:
+                in_wishlist = Wishlist.query.filter_by(
+                    user_id=user_id, 
+                    hostel_id=hostel.id
+                ).first() is not None
             
             # Get rooms and price
-            rooms = Room.query.filter_by(hostel_id=hostel.id, is_available=True).all()
-            hostel_min_price = min(room.price for room in rooms) if rooms else 0
-            hostel_room_type = rooms[0].room_type if rooms else None
+            hostel_min_price = min(room.price for room in filtered_rooms) if filtered_rooms else 0
+            hostel_room_type = filtered_rooms[0].room_type if filtered_rooms else None
             
             # Ensure amenities is always an array
             amenities = hostel.amenities
@@ -107,7 +119,7 @@ class StudentAccommodations(Resource):
                 'rating': round(avg_rating, 1),
                 'review_count': len(reviews),
                 'is_in_wishlist': in_wishlist,
-                'available_rooms': sum(room.available_units for room in rooms) if rooms else 0,
+                'available_rooms': sum(room.available_units for room in filtered_rooms) if filtered_rooms else 0,
                 # Include individual room details
                 'rooms': [{
                     'id': room.id,
@@ -116,7 +128,7 @@ class StudentAccommodations(Resource):
                     'capacity': room.capacity,
                     'available_units': room.available_units,
                     'is_available': room.is_available
-                } for room in rooms]
+                } for room in filtered_rooms]
             })
         
         return {
@@ -127,6 +139,19 @@ class StudentAccommodations(Resource):
             'has_next': pagination.has_next,
             'has_prev': pagination.has_prev
         }, 200
+    
+    @jwt_required()
+    def post(self):
+        """Create accommodation - requires authentication (host only)"""
+        # This is for hosts to create accommodations
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        
+        if not user or user.role != 'host':
+            return {"message": "Only hosts can create accommodations"}, 403
+        
+        # Implementation for creating accommodations would go here
+        return {"message": "Use /host/listings to create accommodations"}, 400
 
 
 class StudentAccommodationDetail(Resource):
